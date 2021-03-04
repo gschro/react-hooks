@@ -22,37 +22,37 @@ const Rejected = ({message}) => (
   </div>
 )
 
+const updateState = nextState => prevState => ({...prevState, ...nextState})
+
 function PokemonInfo({pokemonName}) {
-  const [pokemon, setPokemon] = React.useState(null)
-  const [error, setError] = React.useState(null)
-  const [status, setStatus] = React.useState(STATUSES.idle)
+  const [state, setState] = React.useState({
+    status: STATUSES.idle,
+    error: null,
+    pokemon: null,
+  })
 
   React.useEffect(() => {
     if (pokemonName) {
-      setPokemon(null)
-      setError(null)
-      setStatus(STATUSES.pending)
+      setState(updateState({status: STATUSES.pending}))
       fetchPokemon(pokemonName)
-        .then(result => {
-          setPokemon(result)
-          setStatus(STATUSES.resolved)
+        .then(pokemon => {
+          setState(updateState({status: STATUSES.resolved, pokemon}))
         })
-        .catch(err => {
-          setError(err)
-          setStatus(STATUSES.rejected)
+        .catch(error => {
+          setState(updateState({status: STATUSES.rejected, error}))
         })
     }
-  }, [pokemonName, setPokemon])
+  }, [pokemonName, setState])
 
-  switch (status) {
+  switch (state.status) {
     case STATUSES.idle:
       return 'Submit a pokemon'
     case STATUSES.pending:
       return <PokemonInfoFallback name={pokemonName} />
     case STATUSES.resolved:
-      return <PokemonDataView pokemon={pokemon} />
+      return <PokemonDataView pokemon={state.pokemon} />
     case STATUSES.rejected:
-      return <Rejected message={error.message} />
+      return <Rejected message={state.error.message} />
     default:
       return 'Invalid status'
   }
