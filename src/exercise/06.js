@@ -8,24 +8,7 @@ import {
   PokemonDataView,
   fetchPokemon,
 } from '../pokemon'
-
-class ErrorBoundary extends React.Component {
-  state = {error: null}
-
-  static getDerivedStateFromError(error) {
-    // Update state so the next render will show the fallback UI.
-    return {error}
-  }
-
-  render() {
-    if (this.state.error) {
-      // You can render any custom fallback UI
-      return <Rejected message={this.state.error} />
-    }
-
-    return this.props.children
-  }
-}
+import {ErrorBoundary} from 'react-error-boundary'
 
 const STATUSES = {
   idle: 'idle',
@@ -34,9 +17,10 @@ const STATUSES = {
   rejected: 'rejected',
 }
 
-const Rejected = ({message}) => (
+const ErrorMessage = ({error}) => (
   <div role="alert">
-    There was an error: <pre style={{whiteSpace: 'normal'}}>{message}</pre>
+    There was an error:{' '}
+    <pre style={{whiteSpace: 'normal'}}>{error.message}</pre>
   </div>
 )
 
@@ -88,7 +72,7 @@ function App() {
       <PokemonForm pokemonName={pokemonName} onSubmit={handleSubmit} />
       <hr />
       <div className="pokemon-info">
-        <ErrorBoundary key={pokemonName}>
+        <ErrorBoundary key={pokemonName} FallbackComponent={ErrorMessage}>
           <PokemonInfo pokemonName={pokemonName} />
         </ErrorBoundary>
       </div>
