@@ -1,46 +1,14 @@
 // useState: tic tac toe
 // http://localhost:3000/isolated/exercise/04.js
-import React, { useEffect, useState } from 'react'
-
-const useLocalStorageState = (key, initialValue = '') => {
-  const getInitialState = () => JSON.parse(window.localStorage.getItem(key)) || initialValue
-  const [value, setValue] = useState(getInitialState)
-
-  useEffect(() => {
-    window.localStorage.setItem(key, JSON.stringify(value))
-  }, [key, value])
-
-  return [value, setValue]
-}
+import React, {useState} from 'react'
+import {useLocalStorageState} from '../utils'
 
 const initialSquares = Array(9).fill(null)
 
-function Board() {
-  const [squares, setSquares] = useLocalStorageState('game', initialSquares)
-
-  const nextValue = calculateNextValue(squares)
-  const winner = calculateWinner(squares)
-  const status = calculateStatus(winner, squares, nextValue)
-
-  // This is the function your square click handler will call. `square` should
-  // be an index. So if they click the center square, this will be `4`.
-  function selectSquare(square) {
-    if (winner || squares[square]) {
-      return
-    }
-
-    const nextSquares = [...squares]
-    nextSquares[square] = nextValue
-    setSquares(nextSquares)
-  }
-
-  function restart() {
-    setSquares(initialSquares)
-  }
-
+function Board({onClick, squares}) {
   function renderSquare(i) {
     return (
-      <button className="square" onClick={() => selectSquare(i)}>
+      <button className="square" onClick={() => onClick(i)}>
         {squares[i]}
       </button>
     )
@@ -48,7 +16,6 @@ function Board() {
 
   return (
     <div>
-      <div className="status">{status}</div>
       <div className="board-row">
         {renderSquare(0)}
         {renderSquare(1)}
@@ -64,18 +31,77 @@ function Board() {
         {renderSquare(7)}
         {renderSquare(8)}
       </div>
-      <button className="restart" onClick={restart}>
-        restart
-      </button>
     </div>
   )
 }
 
 function Game() {
+  const [history, setHistory] = useLocalStorageState('history', [
+    initialSquares,
+  ])
+  const [selectedSquares, setSelectedSquares] = useLocalStorageState(
+    'selected',
+    0,
+  )
+  const currentSquares = history[selectedSquares]
+  const nextValue = calculateNextValue(currentSquares)
+  const winner = calculateWinner(currentSquares)
+  const status = calculateStatus(winner, currentSquares, nextValue)
+  const [moves, setMoves] = useState([])
+
+  React.useEffect(() => {
+    setMoves(
+      history.map((squares, index) => {
+        const selected = index === selectedSquares
+        return (
+          <li key={index}>
+            <button
+              disabled={selected}
+              onClick={() => setSelectedSquares(index)}
+            >
+              {index === 0 ? 'Go to game start' : `Go to move # ${index}`}
+              {selected ? ' (current)' : null}
+            </button>
+          </li>
+        )
+      }),
+    )
+  }, [history, selectedSquares, setSelectedSquares])
+
+  function selectSquare(square) {
+    if (winner || currentSquares[square]) {
+      return
+    }
+
+    const nextSquares = [...currentSquares]
+    nextSquares[square] = nextValue
+
+    setHistory(history => {
+      const previousSquares =
+        history.length > selectedSquares + 1
+          ? history.slice(0, selectedSquares + 1)
+          : history
+      return [...previousSquares, nextSquares]
+    })
+    setSelectedSquares(selected => selected + 1)
+  }
+
+  function restart() {
+    setSelectedSquares(0)
+    setHistory([initialSquares])
+  }
+
   return (
     <div className="game">
       <div className="game-board">
-        <Board />
+        <Board onClick={selectSquare} squares={currentSquares} />
+        <button className="restart" onClick={restart}>
+          restart
+        </button>
+      </div>
+      <div className="game-info">
+        <div>{status}</div>
+        <ol>{moves}</ol>
       </div>
     </div>
   )
